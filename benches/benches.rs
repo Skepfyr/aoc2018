@@ -1,7 +1,9 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, PlotConfiguration};
 
 fn benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("solutions");
+    group
+        .plot_config(PlotConfiguration::default().summary_scale(criterion::AxisScale::Logarithmic));
     for (i, solution) in aoc2018::SOLUTIONS.iter().enumerate() {
         let day = i + 1;
         group.bench_function(format!("Day {day} Part 1"), |b| {
