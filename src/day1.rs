@@ -1,5 +1,4 @@
-use std::collections::HashSet;
-
+use ahash::AHashSet;
 use eyre::{bail, Result};
 use tracing::instrument;
 
@@ -30,7 +29,7 @@ fn part2(input: &str) -> Result<String> {
         *acc += d;
         Some(*acc)
     });
-    let mut seen = HashSet::new();
+    let mut seen = AHashSet::default();
     loop {
         let freq = frequencies.next().unwrap();
         if !seen.insert(freq) {
