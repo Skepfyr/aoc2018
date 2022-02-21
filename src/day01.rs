@@ -5,7 +5,7 @@ use tracing::instrument;
 use crate::Solution;
 
 pub const SOLUTION: Solution = Solution {
-    input: include_str!("../input/day1.txt"),
+    input: include_str!("../input/day01.txt"),
     part1,
     part2,
 };
