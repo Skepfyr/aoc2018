@@ -4,6 +4,8 @@ use aoc2018::SOLUTIONS;
 use clap::Parser;
 use color_eyre::Result;
 use eyre::bail;
+use tracing_error::ErrorLayer;
+use tracing_subscriber::{prelude::*, EnvFilter};
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -12,7 +14,11 @@ struct Args {
 }
 
 fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::registry()
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
+        .with(tracing_subscriber::fmt::layer().pretty())
+        .with(ErrorLayer::default())
+        .init();
     color_eyre::install()?;
     let args = Args::parse();
 
