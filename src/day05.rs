@@ -1,4 +1,3 @@
-use ahash::AHashSet;
 use eyre::Result;
 use tracing::{debug, instrument};
 
@@ -10,34 +9,44 @@ pub const SOLUTION: Solution = Solution {
     part2,
 };
 
-fn react(input: impl IntoIterator<Item = char>) -> usize {
-    let mut unreacted: Vec<char> = Vec::new();
+#[instrument(skip(input))]
+fn react(input: impl IntoIterator<Item = char>) -> Vec<char> {
+    let input = input.into_iter();
+    let mut unreacted: Vec<char> = Vec::with_capacity(input.size_hint().0);
     for c in input {
         if !c.is_alphabetic() {
             continue;
         }
         match unreacted.last() {
-            Some(&last) if last.to_ascii_lowercase() == c.to_ascii_lowercase() && last != c => {
+            Some(&last) if last.eq_ignore_ascii_case(&c) && last != c => {
                 unreacted.pop();
             }
             _ => unreacted.push(c),
         }
     }
     debug!(unreacted = %unreacted.iter().copied().collect::<String>());
-    unreacted.len()
+    unreacted
 }
 
 #[instrument(skip(input))]
 fn part1(input: &str) -> Result<String> {
-    Ok(react(input.chars()).to_string())
+    Ok(react(input.chars()).len().to_string())
 }
 
 #[instrument(skip(input))]
 fn part2(input: &str) -> Result<String> {
-    let symbols: AHashSet<char> = input.chars().map(|c| c.to_ascii_lowercase()).collect();
-    let max = symbols
+    let reacted = react(input.chars());
+    let max = ('a'..='z')
         .into_iter()
-        .map(|s| react(input.chars().filter(|c| c.to_ascii_lowercase() != s)))
+        .map(|s| {
+            react(
+                reacted
+                    .iter()
+                    .copied()
+                    .filter(|c| c.to_ascii_lowercase() != s),
+            )
+            .len()
+        })
         .min()
         .unwrap();
     Ok(max.to_string())
@@ -49,6 +58,7 @@ mod tests {
 
     #[test]
     fn fully_reacts() {
-        assert_eq!("10", &part1("dabAcCaCBAcCcaDA").unwrap())
+        let reacted = react("dabAcCaCBAcCcaDA".chars());
+        assert_eq!("dabCBAcaDA", reacted.into_iter().collect::<String>())
     }
 }
