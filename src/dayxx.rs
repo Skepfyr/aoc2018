@@ -9,7 +9,7 @@ pub const SOLUTION: Solution = Solution {
     part2,
 };
 
-fn parse() -> Result<String> {}
+fn parse(input: &str) -> Result<String> {}
 
 #[instrument(skip(input))]
 fn part1(input: &str) -> Result<String> {
