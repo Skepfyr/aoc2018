@@ -1,6 +1,6 @@
-use eyre::{bail, eyre, Result};
+use eyre::{eyre, Result};
 use smallvec::SmallVec;
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 use crate::Solution;
 
@@ -10,60 +10,111 @@ pub const SOLUTION: Solution = Solution {
     part2,
 };
 
-fn parse<T, R: FnMut(&[T], &[u32]) -> T>(input: &str, mut reducer: R) -> Result<T> {
+fn parse<R: Reduce>(input: &str, reducer: R) -> Result<R::Output> {
     let mut input = input
         .split_ascii_whitespace()
-        .map((move |num| Ok(num.parse::<u32>()?)) as fn(&str) -> Result<u32>);
-    reduce(&mut input, &mut reducer)
+        .map(move |num| -> Result<u32> { Ok(num.parse::<u32>()?) });
+    reduce(&mut input, reducer)
 }
 
-fn reduce<I: Iterator<Item = Result<u32>>, T, R: FnMut(&[T], &[u32]) -> T>(
+fn reduce<I: Iterator<Item = Result<u32>>, R: Reduce>(
     input: &mut I,
-    reducer: &mut R,
-) -> Result<T> {
+    mut reducer: R,
+) -> Result<R::Output> {
     let children = input
         .next()
         .ok_or(eyre!("Missing number of child nodes"))??;
     let metadata_len = input
         .next()
         .ok_or(eyre!("Missing number of metadata entries"))?? as usize;
-    let children = (0..children)
-        .map(|_| reduce(input, reducer))
-        .collect::<Result<SmallVec<[T; 16]>>>()?;
-    let metadata = input
-        .take(metadata_len)
-        .collect::<Result<SmallVec<[u32; 16]>, _>>()?;
-    if metadata.len() != metadata_len {
-        bail!("Missing metadata");
+    for _ in 0..children {
+        let mut called = false;
+        reducer.child(|child_reducer| {
+            called = true;
+            reduce(input, child_reducer)
+        })?;
+        if !called {
+            reduce(input, NullReduce)?;
+        }
     }
-    Ok(reducer(children.as_slice(), &metadata))
+    let mut metadata_count = 0;
+    let res = reducer.metadata(
+        input
+            .by_ref()
+            .inspect(|_| metadata_count += 1)
+            .take(metadata_len),
+    )?;
+    for _ in metadata_count..metadata_len {
+        input.next().ok_or_else(|| eyre!("Missing metadata"))??;
+    }
+    Ok(res)
+}
+
+trait Reduce
+where
+    Self: Sized,
+{
+    type Output;
+
+    fn child(&mut self, child: impl FnOnce(Self) -> Result<Self::Output>) -> Result<()>;
+    fn metadata(self, metadata: impl Iterator<Item = Result<u32>>) -> Result<Self::Output>;
+}
+
+struct NullReduce;
+impl Reduce for NullReduce {
+    type Output = ();
+
+    fn child(&mut self, child: impl FnOnce(Self) -> Result<Self::Output>) -> Result<()> {
+        child(NullReduce)
+    }
+
+    fn metadata(self, _metadata: impl Iterator<Item = Result<u32>>) -> Result<Self::Output> {
+        Ok(())
+    }
 }
 
 #[instrument(skip(input))]
 fn part1(input: &str) -> Result<String> {
-    parse(input, |children, metadata| {
-        children.iter().sum::<u32>() + metadata.iter().sum::<u32>()
-    })
-    .map(|num| num.to_string())
+    #[derive(Default)]
+    struct SumReduce(u32);
+    impl Reduce for SumReduce {
+        type Output = u32;
+
+        fn child(&mut self, child: impl FnOnce(Self) -> Result<Self::Output>) -> Result<()> {
+            self.0 += child(Self::default())?;
+            Ok(())
+        }
+
+        fn metadata(self, metadata: impl Iterator<Item = Result<u32>>) -> Result<Self::Output> {
+            Ok(self.0 + metadata.sum::<Result<u32>>()?)
+        }
+    }
+    parse(input, SumReduce::default()).map(|num| num.to_string())
 }
 
 #[instrument(skip(input))]
 fn part2(input: &str) -> Result<String> {
-    parse(input, |children, metadata| {
-        if children.is_empty() {
-            let sum = metadata.iter().sum();
-            debug!(sum, "Leaf node");
-            sum
-        } else {
-            let sum = metadata
-                .iter()
-                .map(|&entry| children.get(entry as usize - 1).copied().unwrap_or(0))
-                .sum();
-            debug!(sum, "Composite node");
-            sum
+    #[derive(Default)]
+    struct ValueReduce(SmallVec<[u32; 16]>);
+    impl Reduce for ValueReduce {
+        type Output = u32;
+
+        fn child(&mut self, child: impl FnOnce(Self) -> Result<Self::Output>) -> Result<()> {
+            self.0.push(child(Self::default())?);
+            Ok(())
         }
-    })
-    .map(|num| num.to_string())
+
+        fn metadata(self, metadata: impl Iterator<Item = Result<u32>>) -> Result<Self::Output> {
+            if self.0.is_empty() {
+                metadata.sum()
+            } else {
+                metadata
+                    .map(|datum| Ok(self.0.get(datum? as usize - 1).copied().unwrap_or(0)))
+                    .sum()
+            }
+        }
+    }
+    parse(input, ValueReduce::default()).map(|num| num.to_string())
 }
 
 #[cfg(test)]
