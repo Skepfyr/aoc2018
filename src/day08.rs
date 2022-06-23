@@ -1,4 +1,4 @@
-use eyre::{eyre, Result};
+use eyre::{bail, eyre, Result};
 use smallvec::SmallVec;
 use tracing::instrument;
 
@@ -34,20 +34,21 @@ fn reduce<I: Iterator<Item = Result<u32>>, R: Reduce>(
             reduce(input, child_reducer)
         })?;
         if !called {
-            reduce(input, NullReduce)?;
+            reduce(input, ())?;
         }
     }
-    let mut metadata_count = 0;
-    let res = reducer.metadata(
-        input
-            .by_ref()
-            .inspect(|_| metadata_count += 1)
-            .take(metadata_len),
-    )?;
-    for _ in metadata_count..metadata_len {
-        input.next().ok_or_else(|| eyre!("Missing metadata"))??;
+    let mut metadata = SmallVec::<[u32; 16]>::with_capacity(metadata_len);
+    for datum in input.take(metadata_len) {
+        metadata.push(datum?);
     }
-    Ok(res)
+    if metadata.len() != metadata_len {
+        bail!(
+            "Missing metadata: found {}, expected {}",
+            metadata.len(),
+            metadata_len
+        );
+    }
+    Ok(reducer.metadata(&metadata))
 }
 
 trait Reduce
@@ -57,20 +58,17 @@ where
     type Output;
 
     fn child(&mut self, child: impl FnOnce(Self) -> Result<Self::Output>) -> Result<()>;
-    fn metadata(self, metadata: impl Iterator<Item = Result<u32>>) -> Result<Self::Output>;
+    fn metadata(self, metadata: &[u32]) -> Self::Output;
 }
 
-struct NullReduce;
-impl Reduce for NullReduce {
+impl Reduce for () {
     type Output = ();
 
     fn child(&mut self, child: impl FnOnce(Self) -> Result<Self::Output>) -> Result<()> {
-        child(NullReduce)
+        child(())
     }
 
-    fn metadata(self, _metadata: impl Iterator<Item = Result<u32>>) -> Result<Self::Output> {
-        Ok(())
-    }
+    fn metadata(self, _metadata: &[u32]) -> Self::Output {}
 }
 
 #[instrument(skip(input))]
@@ -85,8 +83,8 @@ fn part1(input: &str) -> Result<String> {
             Ok(())
         }
 
-        fn metadata(self, metadata: impl Iterator<Item = Result<u32>>) -> Result<Self::Output> {
-            Ok(self.0 + metadata.sum::<Result<u32>>()?)
+        fn metadata(self, metadata: &[u32]) -> Self::Output {
+            self.0 + metadata.iter().sum::<u32>()
         }
     }
     parse(input, SumReduce::default()).map(|num| num.to_string())
@@ -104,12 +102,13 @@ fn part2(input: &str) -> Result<String> {
             Ok(())
         }
 
-        fn metadata(self, metadata: impl Iterator<Item = Result<u32>>) -> Result<Self::Output> {
+        fn metadata(self, metadata: &[u32]) -> Self::Output {
             if self.0.is_empty() {
-                metadata.sum()
+                metadata.iter().sum()
             } else {
                 metadata
-                    .map(|datum| Ok(self.0.get(datum? as usize - 1).copied().unwrap_or(0)))
+                    .iter()
+                    .map(|&datum| self.0.get(datum as usize - 1).copied().unwrap_or(0))
                     .sum()
             }
         }
