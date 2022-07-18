@@ -11,6 +11,7 @@ clap = { version = "3.0.14", features = ["derive"] }
 color-eyre = "0.6.0"
 eyre = "0.6.6"
 itertools = "0.10"
+nalgebra = "0.31.0"
 recap = "0.1"
 serde = "1"
 smallvec = "1.8.0"
@@ -25,5 +26,3 @@ criterion = "0.3.5"
 [[bench]]
 name = "benches"
 harness = false
-
-[features]
