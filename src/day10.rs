@@ -59,7 +59,7 @@ fn part1(input: &str) -> Result<String> {
     let max_x = points.iter().map(|p| p[0]).max().unwrap();
     let min_y = points.iter().map(|p| p[1]).min().unwrap();
     let max_y = points.iter().map(|p| p[1]).max().unwrap();
-    let mut answer = String::with_capacity((1 + (max_x - min_x + 1) * (max_y - min_y)) as usize);
+    let mut answer = String::with_capacity((1 + (max_x - min_x + 2) * (max_y - min_y + 1)) as usize);
     answer.push('\n');
     for y in min_y..=max_y {
         for x in min_x..=max_x {
