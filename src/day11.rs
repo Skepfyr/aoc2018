@@ -48,26 +48,24 @@ fn part2(input: &str) -> Result<String> {
     let mut grids: Box<[[[i32; GRID_SIZE]; GRID_SIZE]; GRID_SIZE + 1]> = zeroed_box();
     grids[1] = make_grid(input.trim().parse()?);
     for size in 2..=GRID_SIZE {
-        if size % 2 == 0 {
-            for y in 0..=GRID_SIZE - size {
-                for x in 0..=GRID_SIZE - size {
+        for y in 0..=GRID_SIZE - size {
+            for x in 0..=GRID_SIZE - size {
+                grids[size][y][x] = if size % 2 == 0 {
                     let half_grid = &grids[size / 2];
-                    grids[size][y][x] = half_grid[y][x]
+                    half_grid[y][x]
                         + half_grid[y][x + size / 2]
                         + half_grid[y + size / 2][x]
-                        + half_grid[y + size / 2][x + size / 2];
-                }
-            }
-        } else {
-            for y in 0..=GRID_SIZE - size {
-                for x in 0..=GRID_SIZE - size {
-                    grids[size][y][x] = grids[size - 1][y][x]
-                        + grids[1][y + size - 1][x..x + size].iter().sum::<i32>()
-                        + grids[1][y..y + size - 1]
-                            .iter()
-                            .map(|row| row[x + size - 1])
-                            .sum::<i32>();
-                }
+                        + half_grid[y + size / 2][x + size / 2]
+                } else {
+                    let mid = size / 2;
+                    let half_grid_up = &grids[mid + 1];
+                    let half_grid_down = &grids[mid];
+                    half_grid_up[y][x]
+                        + half_grid_up[y + mid][x + mid]
+                        + half_grid_down[y + mid + 1][x]
+                        + half_grid_down[y][x + mid + 1]
+                        - grids[1][y + mid][x + mid]
+                };
             }
         }
     }
