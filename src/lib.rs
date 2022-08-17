@@ -11,6 +11,7 @@ mod day08;
 mod day09;
 mod day10;
 mod day11;
+mod day12;
 
 pub struct Solution {
     pub input: &'static str,
@@ -18,7 +19,7 @@ pub struct Solution {
     pub part2: fn(&str) -> Result<String>,
 }
 
-pub const SOLUTIONS: [Solution; 11] = [
+pub const SOLUTIONS: [Solution; 12] = [
     day01::SOLUTION,
     day02::SOLUTION,
     day03::SOLUTION,
@@ -30,4 +31,5 @@ pub const SOLUTIONS: [Solution; 11] = [
     day09::SOLUTION,
     day10::SOLUTION,
     day11::SOLUTION,
+    day12::SOLUTION,
 ];
