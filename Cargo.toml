@@ -11,6 +11,7 @@ bitvec = "1.0.1"
 bytemuck = { version = "1.10.0", features = ["extern_crate_std", "min_const_generics"] }
 clap = { version = "3.0.14", features = ["derive"] }
 color-eyre = "0.6.0"
+enum-iterator = "1.2.0"
 eyre = "0.6.6"
 indicatif = "0.17.0"
 itertools = "0.10"
