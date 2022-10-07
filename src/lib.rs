@@ -23,7 +23,17 @@ pub struct Solution {
     pub part2: fn(&str) -> Result<String>,
 }
 
-pub const SOLUTIONS: [Solution; 16] = [
+const UNSOLVED: Solution = Solution {
+    input: "",
+    part1: unsolved,
+    part2: unsolved,
+};
+
+fn unsolved(_: &str) -> Result<String> {
+    Ok("unsolved".to_string())
+}
+
+pub const SOLUTIONS: [Solution; 25] = [
     day01::SOLUTION,
     day02::SOLUTION,
     day03::SOLUTION,
@@ -40,4 +50,13 @@ pub const SOLUTIONS: [Solution; 16] = [
     day14::SOLUTION,
     day15::SOLUTION,
     day16::SOLUTION,
+    UNSOLVED,
+    UNSOLVED,
+    UNSOLVED,
+    UNSOLVED,
+    UNSOLVED,
+    UNSOLVED,
+    UNSOLVED,
+    UNSOLVED,
+    UNSOLVED,
 ];

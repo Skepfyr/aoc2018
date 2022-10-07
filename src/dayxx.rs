@@ -9,14 +9,12 @@ pub const SOLUTION: Solution = Solution {
     part2,
 };
 
-fn parse(input: &str) -> Result<String> {}
-
 #[instrument(skip(input))]
 fn part1(input: &str) -> Result<String> {
-    todo!()
+    Ok("unsolved".to_string())
 }
 
 #[instrument(skip(input))]
 fn part2(input: &str) -> Result<String> {
-    todo!()
+    Ok("unsolved".to_string())
 }
